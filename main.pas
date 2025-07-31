@@ -1,25 +1,13 @@
 program tetris;
-uses crt, game;
-
-procedure GetKey(var code: integer);
+uses game;
 var
-    c: char;
+    tetrisGame: game.TetrisGame;
 begin
-    c := ReadKey;
-    if c = #0 then begin
-        c := ReadKey;
-        code := -ord(c);
-    end 
-    else begin
-        code := ord(c);
-    end;
-end;
-
-begin
+    TetrisInit(tetrisGame);
     repeat
-        ProcessInput;
-        Update;
-        Render;
-    until not IsGameRunning;
+        ProcessInput(tetrisGame);
+        Update(tetrisGame);
+        Render(tetrisGame);
+    until not IsGameRunning(tetrisGame);
     writeln('Game Finished');
 end.
