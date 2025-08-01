@@ -1,8 +1,8 @@
 unit shape;
 interface
+uses constants, sevenrng;
 
 type
-    ShapeType = (J, I, O, L, Z, T, S);
     ShapeSubType = (degree0, degree90, degree180, degree270);
 
     Point = record
@@ -19,31 +19,37 @@ type
 const 
     Shapes: array [1..7, 1..4, 1..4, 1..4] of integer = ((
         ( { J }
+            (1, 0, 0, 0),
+            (1, 1, 1, 0),
             (0, 0, 0, 0),
-            (0, 0, 1, 0),
-            (0, 0, 1, 0),
-            (0, 1, 1, 0)
+            (0, 0, 0, 0)
         ),
         (
-            (0, 0, 0, 0),
+            (0, 1, 1, 0),
             (0, 1, 0, 0),
-            (0, 1, 1, 1),
+            (0, 1, 0, 0),
             (0, 0, 0, 0)
         ),
         (
             (0, 0, 0, 0),
-            (0, 0, 1, 1),
+            (1, 1, 1, 0),
             (0, 0, 1, 0),
-            (0, 0, 1, 0)
+            (0, 0, 0, 0)
         ),
         (
-            (0, 0, 0, 0),
-            (0, 0, 0, 0),
-            (0, 1, 1, 1),
-            (0, 0, 0, 1)
+            (0, 1, 0, 0),
+            (0, 1, 0, 0),
+            (1, 1, 0, 0),
+            (0, 0, 0, 0)
         )
         { J end }
     ), ( { I }
+        (
+            (0, 0, 0, 0),
+            (1, 1, 1, 1),
+            (0, 0, 0, 0),
+            (0, 0, 0, 0)
+        ),
         (
             (0, 0, 1, 0),
             (0, 0, 1, 0),
@@ -61,12 +67,6 @@ const
             (0, 1, 0, 0),
             (0, 1, 0, 0),
             (0, 1, 0, 0)
-        ),
-        (
-            (0, 0, 0, 0),
-            (1, 1, 1, 1),
-            (0, 0, 0, 0),
-            (0, 0, 0, 0)
         )
         { I end }
     ),( { O }
@@ -97,27 +97,27 @@ const
         { O end }
     ), ( { L }
         (
-            (0, 0, 0, 0),
-            (0, 1, 0, 0),
-            (0, 1, 0, 0),
-            (0, 1, 1, 0)
-        ),
-        (
-            (0, 0, 0, 0),
-            (0, 0, 0, 0),
-            (1, 1, 1, 0),
-            (1, 0, 0, 0)
-        ),
-        (
-            (0, 0, 0, 0),
-            (1, 1, 0, 0),
-            (0, 1, 0, 0),
-            (0, 1, 0, 0)
-        ),
-        (
-            (0, 0, 0, 0),
             (0, 0, 1, 0),
             (1, 1, 1, 0),
+            (0, 0, 0, 0),
+            (0, 0, 0, 0)
+        ),
+        (
+            (0, 1, 0, 0),
+            (0, 1, 0, 0),
+            (0, 1, 1, 0),
+            (0, 0, 0, 0)
+        ),
+        (
+            (0, 0, 0, 0),
+            (1, 1, 1, 0),
+            (1, 0, 0, 0),
+            (0, 0, 0, 0)
+        ),
+        (
+            (1, 1, 0, 0),
+            (0, 1, 0, 0),
+            (0, 1, 0, 0),
             (0, 0, 0, 0)
         )
         { L end }
@@ -201,46 +201,32 @@ const
         { S end }
     ));
 
-procedure MoveShape(key: integer; var shape: TetrisShape; var cemented: boolean);
-procedure NewShape(var shape: TetrisShape);
+procedure NewShape(var shape: TetrisShape; var bag: SevenBag);
+
+procedure MoveShapeLeft(var shape: TetrisShape);
+procedure MoveShapeRight(var shape: TetrisShape);
+procedure MoveShapeDown(var shape: TetrisShape);
+procedure MoveShapeUp(var shape: TetrisShape);
+procedure RotateShape(var shape: TetrisShape);
+procedure RotateShapeBack(var shape: TetrisShape);
 
 implementation
-uses constants;
 
-procedure NewShape(var shape: TetrisShape);
+procedure NewShape(var shape: TetrisShape; var bag: SevenBag);
 const
-    posYStart: array [1..SHAPESCOUNT] of integer = (2, 0, 1, 2, 1, 1, 1);
+    posYStart: array [1..SHAPESCOUNT] of integer = (0, 0, 0, 0, 0, 0, 0);
 var
     _type: ShapeType;
 begin
-    shape.shapeType := I;
+    BAGTakeShape(bag, shape.shapeType);
     shape.subtype := degree0;
-    shape.posX := MAPWIDTH div 2 - 3;
+    shape.posX := MAPWIDTH div 2-2;
 
     _type := shape.shapeType;
     shape.posY := posYStart[ord(_type) + 1];
 end;
 
-procedure CheckShapeCollision( 
-    shape: TetrisShape;
-    var canMoveLeft: boolean;
-    var canMoveRight: boolean; 
-    var canMoveDown: boolean);
-begin
-
-    canMoveDown := true;
-    canMoveLeft := true;
-    canMoveRight := true;
-
-    if shape.posY = MAPHEIGHT then
-        canMoveDown := false;
-    if shape.posX = MAPWIDTH then
-        canMoveRight := false;
-    if shape.posX = 0 then
-        canMoveLeft := false;
-end;
-
-procedure NextType4(var _type: ShapeSubType);
+procedure NextType(var _type: ShapeSubType);
 begin
     if _type = degree270 then begin
         _type := degree0;
@@ -250,54 +236,50 @@ begin
     end;
 end; 
 
+procedure PrevType(var _type: ShapeSubType);
+begin
+    if _type = degree0 then begin
+        _type := degree270;
+    end
+    else begin 
+        _type := pred(_type);
+    end;
+end; 
+
 procedure RotateShape(var shape: TetrisShape);
 begin
-    NextType4(shape.subtype);
+    NextType(shape.subtype);
 end;
 
-procedure MoveShape(key: integer; var shape: TetrisShape; var cemented: boolean);
-const
-    LEFT = -75;
-    RIGHT = -77;
-    UP = -72;
-    DOWN = -80;
-var
-    _shape: TetrisShape;
-    canMoveLeft: boolean;
-    canMoveRight: boolean;
-    canMoveDown: boolean;
+procedure RotateShapeBack(var shape: TetrisShape);
 begin
-    _shape := shape;
-    CheckShapeCollision(_shape, canMoveLeft, canMoveRight, canMoveDown);
-    case key of
-        LEFT :
-        begin
-            if canMoveLeft then 
-                _shape.posX := _shape.posX - 1;
-        end;
-        RIGHT :
-        begin
-            if canMoveRight then
-                _shape.posX := _shape.posX + 1;
-        end;
-        DOWN:
-        begin
-            { TODO: make figure go down faster }
-        end;
-        UP :
-        begin
-            RotateShape(_shape);
-        end;
-    end;
-    { TODO: make it depend on gameTickCounter }
-    if canMoveDown then begin
-        _shape.posY := _shape.posY + 1; { hope its down }
-        cemented := false;
-    end
-    else begin
-        cemented := true;
-    end;
-    shape := _shape;
+    PrevType(shape.subtype);
+end;
+
+procedure MoveShapeBy(var shape: TetrisShape; x, y: integer);
+begin
+    shape.posX := shape.posX + x;
+    shape.posY := shape.posY + y;
+end;
+
+procedure MoveShapeUp(var shape: TetrisShape);
+begin 
+    MoveShapeBy(shape, 0, -1);
+end;
+
+procedure MoveShapeLeft(var shape: TetrisShape);
+begin 
+    MoveShapeBy(shape, -1, 0);
+end;
+
+procedure MoveShapeRight(var shape: TetrisShape);
+begin 
+    MoveShapeBy(shape, 1, 0);
+end;
+
+procedure MoveShapeDown(var shape: TetrisShape);
+begin 
+    MoveShapeBy(shape, 0, 1);
 end;
 
 end.

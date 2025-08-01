@@ -1,16 +1,17 @@
 
 TARGET=tetris
 SRC=main.pas
+MODULES=$(wildcard %.pp)
 PASCALC=fpc
 
 .PHONY: all 
 all: $(TARGET)
 
-$(TARGET):
+$(TARGET): $(MODULES)
 	$(PASCALC) $(SRC) -o$(TARGET)
 
 .PHONY: debug
-debug:
+debug: $(MODULES)
 	$(PASCALC) -g $(SRC) -o$(TARGET)
 
 .PHONY: clean 

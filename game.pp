@@ -1,6 +1,6 @@
 unit game;
 interface
-uses shape, constants;
+uses shape, constants, sevenrng;
 
 const 
 
@@ -19,6 +19,7 @@ type
         input: InputState;
         currentShape: shape.TetrisShape;
         nextShape: shape.TetrisShape;
+        rng: SevenBag;
     end;
 
 function IsGameRunning(game: TetrisGame) : boolean;
@@ -48,8 +49,11 @@ begin
         end
     end;
 
-    NewShape(game.currentShape);
-    NewShape(game.nextShape);
+    BAGInit(game.rng);
+
+
+    NewShape(game.currentShape, game.rng);
+    NewShape(game.nextShape, game.rng);
 
     clrscr;
 end;
@@ -95,10 +99,52 @@ begin
     
 end;
 
-procedure UpdateShape(var game: TetrisGame);
+function HasCollision(game: TetrisGame) : boolean;
+var
+    i, j: integer;
+    _shape: TetrisShape;
+    _type: ShapeType;
+    _rot: ShapeSubType;
+    x, y: integer;
+begin
+    _shape := game.currentShape;
+    _type := _shape.shapeType;
+    _rot := _shape.subtype;
+    x := _shape.posX;
+    y := _shape.posY;
+    for j := 1 to 4 do begin
+        for i := 1 to 4 do begin
+            if Shapes[ord(_type) + 1][ord(_rot) + 1][j][i] <> 0 then begin
+                if game.map[y + j][x + i] > 1 then begin
+                    Exit(True);
+                end;
+                if y + j > MAPHEIGHT then begin
+                    Exit(True)
+                end;
+                if (x + i > MAPWIDTH) or (x + i < 1) then begin
+                    Exit(True)
+                end;
+            end
+        end
+    end;
+    HasCollision := False;
+end;
+
+procedure HandleBotCollision(var game: TetrisGame);
+begin
+    game.currentShape := game.nextShape;
+    NewShape(game.nextShape, game.rng);
+end;
+
+procedure UpdateShape(var game: TetrisGame); 
+const
+    LEFT = -75;
+    RIGHT = -77;
+    UP = -72;
+    DOWN = -80;
 var
     _shape: shape.TetrisShape;
-    cemented: boolean;
+    cemented: boolean = false;
 begin
     _shape := game.currentShape;
     {
@@ -109,32 +155,85 @@ begin
     }
     {1.}
     { make it MoveShape(shape, cemenuted, gametick }
+    
     FillShapeWith(game, FREE);
-    MoveShape(game.input.key, _shape, cemented);
-    game.currentShape := _shape;
-    if cemented then begin
-        FillShapeWith(game, CEMENT);        
-        game.currentShape := game.nextShape;
-        NewShape(game.nextShape);
-    end
+    case game.input.key of
+        LEFT : begin
+            MoveShapeLeft(game.currentShape);
+            { collision }
+            if HasCollision(game) then begin
+                MoveShapeRight(game.currentShape);
+            end
+        end;
+        RIGHT : begin
+            MoveShapeRight(game.currentShape);
+            if HasCollision(game) then begin
+                MoveShapeLeft(game.currentShape);
+            end
+        end; 
+        UP : begin 
+            RotateShape(game.currentShape);
+            if HasCollision(game) then
+                RotateShapeBack(game.currentShape);
+        end;
+        DOWN : begin end;
+    end;
+    MoveShapeDown(game.currentShape);
+    if HasCollision(game) then begin
+        MoveShapeUp(game.currentShape);
+        FillShapeWith(game, CEMENT);
+        HandleBotCollision(game);
+    end 
     else begin
         FillShapeWith(game, ACTIVE);
-    end;
+    end
 end;
 
 procedure PrintMap(var game: TetrisGame);
 var
     i, j: integer;
 begin
-    for j := 1 to MAPHEIGHT do begin
-        for i:= 1 to MAPWIDTH do begin
-            write(game.map[j][i], '  ')
+    for j := 1 to MAPHEIGHT do
+    begin
+        for i := 1 to MAPWIDTH do
+        begin
+            if game.map[j][i] <> 0 then
+            begin
+                TextColor(RED);
+                write('▣ ');
+            end
+            else 
+            begin
+                TextColor(WHITE);
+                write('  ');
+            end
         end;
-        writeln('');
-    end;
+        writeln;
+    end
+end;
 
-    game.map[1][1] := 9;
 
+procedure PrintDigitalMap(var game: TetrisGame);
+var
+    i, j: integer;
+begin
+    for j := 1 to MAPHEIGHT do
+    begin
+        for i := 1 to MAPWIDTH do
+        begin
+            if game.map[j][i] <> 0 then
+            begin
+                TextColor(RED);
+                write(game.map[j][i], ' ');
+            end
+            else 
+            begin
+                TextColor(GREEN);
+                write(game.map[j][i], ' ');
+            end
+        end;
+        writeln;
+    end
 end;
 
 procedure Update(var game: TetrisGame);
@@ -150,9 +249,14 @@ end;
 procedure Render(var game: TetrisGame);
 begin
     GotoXY(1, 1);
+    TextBackground(WHITE);
     PrintMap(game);
-    if game.isRunning = false then
+    if game.isRunning = false then begin
+        TextBackground(BLACK);
+        TextColor(WHITE);
         writeln('You entered Space and win');
+    end;
+    TextBackground(BLACK);
 end;
 
 
