@@ -20,6 +20,8 @@ type
         currentShape: shape.TetrisShape;
         nextShape: shape.TetrisShape;
         rng: SevenBag;
+        gameTick: integer;
+        gravity: integer;
     end;
 
 function IsGameRunning(game: TetrisGame) : boolean;
@@ -49,6 +51,9 @@ begin
         end
     end;
 
+    game.gravity := 1;
+    game.gameTick := 0;
+
     BAGInit(game.rng);
 
 
@@ -65,12 +70,10 @@ var
 begin
     GetKey(c);
     game.input.key := c;
-    {
-    if KeyPressed then begin
+    {if KeyPressed then begin
         GetKey(c);
         game.input.key := c;
-    end
-    }
+    end}
 end;
 
 procedure FillShapeWith(var game: TetrisGame; value: integer);
@@ -240,6 +243,7 @@ procedure Update(var game: TetrisGame);
 var
     key: integer;
 begin
+    game.gameTick := game.gameTick + 1;
     UpdateShape(game);
     key := game.input.key;
     if key = ord(' ') then
