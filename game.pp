@@ -15,13 +15,14 @@ type
 
     TetrisGame = record 
         isRunning: boolean;
-        map: array [1..MAPHEIGHT, 1..MAPWIDTH] of integer;
+        map: array [-MAPHEIGHT..MAPHEIGHT, 1..MAPWIDTH] of integer;
         input: InputState;
         currentShape: shape.TetrisShape;
         nextShape: shape.TetrisShape;
         rng: SevenBag;
         gameTick: integer;
         gravity: integer;
+        score: int64;
     end;
 
 function IsGameRunning(game: TetrisGame) : boolean;
@@ -133,10 +134,47 @@ begin
     HasCollision := False;
 end;
 
+procedure WipeLine(var game: TetrisGame; n: integer);
+var
+    j, i: integer;
+begin
+    game.score := game.score + 10;
+    for j := n downto 2 do begin
+        for i := 1 to MAPWIDTH do begin
+            game.map[j][i] := game.map[j - 1][i]
+        end
+    end
+end;
+
 procedure HandleBotCollision(var game: TetrisGame);
+var 
+    fullLines: array [1..MAPHEIGHT] of boolean; { TODO: for future use }
+    j, i: integer;
+    isFull: boolean;
 begin
     game.currentShape := game.nextShape;
     NewShape(game.nextShape, game.rng);
+    if HasCollision(game) then
+        game.isRunning := false;
+
+    for j := 1 to MAPHEIGHT do begin
+        fullLines[j] := true;
+        isFull := true;
+        for i:=1 to MAPWIDTH do begin
+            if game.map[j][i] = 0 then begin
+                fullLines[j] := false;
+                isFull := false;
+                break
+            end
+        end;
+        if isFull then
+            WipeLine(game, j);
+    end;
+
+    { TODO: add combo logic and 4-lines clear bonus }
+
+    
+
 end;
 
 procedure UpdateShape(var game: TetrisGame); 
@@ -145,11 +183,7 @@ const
     RIGHT = -77;
     UP = -72;
     DOWN = -80;
-var
-    _shape: shape.TetrisShape;
-    cemented: boolean = false;
 begin
-    _shape := game.currentShape;
     {
         1. See if we already hit floor or cement (collision)
         1.1 If yes -- fix current shape position by placing cement here
@@ -258,7 +292,7 @@ begin
     if game.isRunning = false then begin
         TextBackground(BLACK);
         TextColor(WHITE);
-        writeln('You entered Space and win');
+        writeln('Your score is ', game.score);
     end;
     TextBackground(BLACK);
 end;
