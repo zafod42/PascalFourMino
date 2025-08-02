@@ -214,7 +214,8 @@ implementation
 
 procedure NewShape(var shape: TetrisShape; var bag: SevenBag);
 const
-    posYStart: array [1..SHAPESCOUNT] of integer = (0, 0, 0, 0, 0, 0, 0);
+                                                  { (J,  I,  O,  L,  Z,  T,  S); }
+    posYStart: array [1..SHAPESCOUNT] of integer = (-1, -2, -2, -1, -1, -1, -1);
 var
     _type: ShapeType;
 begin
