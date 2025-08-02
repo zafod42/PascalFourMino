@@ -10,6 +10,7 @@ const
 
 type 
     InputState = record
+        prev: integer;
         key: integer;
     end;
 
@@ -64,17 +65,21 @@ begin
     clrscr;
 end;
 
+procedure ClearInput(var game: TetrisGame);
+begin
+    game.input.prev := game.input.key;
+    game.input.key := 0;
+end;
 
 procedure ProcessInput(var game: TetrisGame);
 var 
     c: integer;
 begin
-    GetKey(c);
-    game.input.key := c;
-    {if KeyPressed then begin
+    ClearInput(game);
+    if KeyPressed then begin
         GetKey(c);
         game.input.key := c;
-    end}
+    end
 end;
 
 procedure FillShapeWith(var game: TetrisGame; value: integer);
@@ -194,7 +199,10 @@ begin
     { make it MoveShape(shape, cemenuted, gametick }
     
     FillShapeWith(game, FREE);
-    case game.input.key of
+
+    _key := game.input.key;
+
+    case _key of
         LEFT : begin
             MoveShapeLeft(game.currentShape);
             { collision }
@@ -213,9 +221,17 @@ begin
             if HasCollision(game) then
                 RotateShapeBack(game.currentShape);
         end;
-        DOWN : begin end;
+        DOWN : begin 
+            MoveShapeDown(game.currentShape);
+            if HasCollision(game) then begin
+                MoveShapeUp(game.currentShape);
+                FillShapeWith(game, CEMENT);
+                HandleBotCollision(game);
+            end;
+        end;
     end;
-    MoveShapeDown(game.currentShape);
+    if game.gameTick mod 30 = 15 then
+        MoveShapeDown(game.currentShape);
     if HasCollision(game) then begin
         MoveShapeUp(game.currentShape);
         FillShapeWith(game, CEMENT);
@@ -249,36 +265,13 @@ begin
     end
 end;
 
-
-procedure PrintDigitalMap(var game: TetrisGame);
-var
-    i, j: integer;
-begin
-    for j := 1 to MAPHEIGHT do
-    begin
-        for i := 1 to MAPWIDTH do
-        begin
-            if game.map[j][i] <> 0 then
-            begin
-                TextColor(RED);
-                write(game.map[j][i], ' ');
-            end
-            else 
-            begin
-                TextColor(GREEN);
-                write(game.map[j][i], ' ');
-            end
-        end;
-        writeln;
-    end
-end;
-
 procedure Update(var game: TetrisGame);
 var
     key: integer;
 begin
     game.gameTick := game.gameTick + 1;
     UpdateShape(game);
+
     key := game.input.key;
     if key = ord(' ') then
         game.isRunning := false;
