@@ -26,16 +26,59 @@ procedure SetTextColor(var context: DrawContext; color: integer);
 procedure RestoreTerminal(var context: DrawContext);
 
 function isSceenEnough : boolean;
+function ConsoleHeight: integer;
+function ConsoleWidth : integer;
 
 implementation
-uses crt;
+{$IFDEF WINDOWS}
+    uses Windows, crt;
+{$ELSE}
+    uses crt;
+{$ENDIF}
+
+function ConsoleWidth : integer;
+{$IFDEF WINDOWS}
+var
+    ConsoleInfo: CONSOLE_SCREEN_BUFFER_INFO;
+{$ENDIF}
+begin
+    {$IFDEF WINDOWS}
+    if GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), @ConsoleInfo) then begin
+        ConsoleWidth := ConsoleInfo.srWindow.Right - ConsoleInfo.srWindow.Left + 1;
+    end
+    else begin
+        ConsoleWidth := 0; { Cannot identify }
+    end;
+    {$ELSE}
+        ConsoleWidth := ScreenWidth;
+    {$ENDIF}
+end;
+
+function ConsoleHeight: integer;
+{$IFDEF WINDOWS}
+var
+    ConsoleInfo: CONSOLE_SCREEN_BUFFER_INFO;
+{$ENDIF}
+begin
+    {$IFDEF WINDOWS}
+    if GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), @ConsoleInfo) then begin
+        ConsoleHeight := ConsoleInfo.srWindow.Bottom - ConsoleInfo.srWindow.Top + 1;
+    end
+    else begin
+        ConsoleHeight := 0; { Cannot identify }
+    end;
+    {$ELSE}
+        ConsoleHeight := ScreenHeight;
+    {$ENDIF}
+end;
 
 function isSceenEnough : boolean;
 begin
-    if ScreenWidth < MinTerminalWidth then
+    if ConsoleWidth < MinTerminalWidth then
         exit(False);
-    if ScreenHeight < MinTerminalHeight then
+    if ConsoleHeight < MinTerminalHeight then
         exit(False);
+
     isSceenEnough := True;
 end;
 
@@ -46,8 +89,8 @@ begin
 
     clrscr;
 
-    context.Height := ScreenHeight;
-    context.Width := ScreenWidth;
+    context.Height := ConsoleHeight;
+    context.Width := ConsoleWidth;
 
     context.CenterX := context.Width div 2;
     context.CenterY := context.Height div 2;
@@ -82,7 +125,7 @@ begin
     _x := x;
     _y := y;
 
-    TextBackground(White);
+    TextBackground(cell);
     TextColor(BLACK);
     GotoXY(_x - CellSizeX + 1, _y);
     write('░░░');

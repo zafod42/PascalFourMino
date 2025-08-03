@@ -7,6 +7,14 @@ PASCALC=fpc
 .PHONY: all 
 all: $(TARGET)
 
+.PHONY: windows
+windows: $(MODULES)
+	$(PASCALC) $(SRC) -Twin64 -o$(TARGET).exe
+
+.PHONY: windows
+windows_debug: $(MODULES)
+	$(PASCALC) $(SRC) -g -dDEBUG -Twin64 -o$(TARGET).exe
+
 $(TARGET): $(MODULES)
 	$(PASCALC) $(SRC) -o$(TARGET)
 
@@ -16,4 +24,4 @@ debug: $(MODULES)
 
 .PHONY: clean 
 clean:
-	rm *.ppu *.o $(TARGET)
+	rm *.ppu *.o $(TARGET) $(TARGET).exe

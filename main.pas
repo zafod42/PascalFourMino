@@ -1,5 +1,9 @@
 program tetris;
-uses game, crt, sysutils, draw;
+{$IFDEF WINDOWS}
+    uses game, crt, sysutils, draw, Windows;
+{$ELSE}
+    uses game, crt, sysutils, draw;
+{$ENDIF}
 const 
     FrameRate = 30;
     FrameMS = 1000 div FrameRate;
@@ -10,8 +14,8 @@ begin
     Randomize;
     if not isSceenEnough then begin
         writeln('Too small screen size.');
-        writeln('Current size is: cols = ', ScreenHeight, '; rows = ', ScreenWidth);
-        writeln('You need at least: cols = ', MinTerminalHeight, '; rows = ', MinTerminalWidth);
+        writeln('Current size is: cols = ', ConsoleWidth, '; rows = ', ConsoleHeight);
+        writeln('You need at least: cols = ', MinTerminalWidth, '; rows = ', MinTerminalHeight);
         exit;
     end;
 
@@ -22,7 +26,7 @@ begin
         Update(tetrisGame);
         Render(tetrisGame);
         _end := GetTickCount64;
-        delay(FrameMS - (_end - _start));
+        Sleep(FrameMS - (_end - _start));
     until not IsGameRunning(tetrisGame);
     TetrisClean(tetrisGame);
 end.

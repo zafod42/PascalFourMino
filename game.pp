@@ -119,7 +119,7 @@ begin
     
 end;
 
-function HasCollision(game: TetrisGame) : boolean;
+function HasCollision(game: TetrisGame; shape: TetrisShape) : boolean;
 var
     i, j: integer;
     _shape: TetrisShape;
@@ -127,7 +127,7 @@ var
     _rot: ShapeSubType;
     x, y: integer;
 begin
-    _shape := game.currentShape;
+    _shape := shape;
     _type := _shape.shapeType;
     _rot := _shape.subtype;
     x := _shape.posX;
@@ -170,7 +170,7 @@ var
 begin
     game.currentShape := game.nextShape;
     NewShape(game.nextShape, game.rng);
-    if HasCollision(game) then
+    if HasCollision(game, game.currentShape) then
         game.lose := true;
 
     for j := 1 to MAPHEIGHT do begin
@@ -214,31 +214,31 @@ begin
         LEFT : begin
             MoveShapeLeft(game.currentShape);
             { collision }
-            if HasCollision(game) then begin
+            if HasCollision(game, game.currentShape) then begin
                 MoveShapeRight(game.currentShape);
             end
         end;
         RIGHT : begin
             MoveShapeRight(game.currentShape);
-            if HasCollision(game) then begin
+            if HasCollision(game, game.currentShape) then begin
                 MoveShapeLeft(game.currentShape);
             end
         end; 
         UP : begin 
             RotateShape(game.currentShape);
-            if HasCollision(game) then
+            if HasCollision(game, game.currentShape) then
                 RotateShapeBack(game.currentShape);
         end;
         DOWN : begin 
             MoveShapeDown(game.currentShape);
-            if HasCollision(game) then begin
+            if HasCollision(game, game.currentShape) then begin
                 MoveShapeUp(game.currentShape);
                 FillShapeWith(game, CEMENT);
                 HandleBotCollision(game);
             end;
         end;
         SPACE : begin { hard drop }
-            while not HasCollision(game) do 
+            while not HasCollision(game, game.currentShape) do 
                 MoveShapeDown(game.currentShape);
             MoveShapeUp(game.currentShape);
             FillShapeWith(game, CEMENT);
@@ -247,7 +247,7 @@ begin
     end;
     if game.gameTick mod 30 = 15 then
         MoveShapeDown(game.currentShape);
-    if HasCollision(game) then begin
+    if HasCollision(game, game.currentShape) then begin
         MoveShapeUp(game.currentShape);
         FillShapeWith(game, CEMENT);
         HandleBotCollision(game);
@@ -265,7 +265,6 @@ const
 var
     offsetX: integer;
     offsetY: integer;
-    _x, _y: integer;
 begin
     
     TextBackground(WHITE);
@@ -298,8 +297,8 @@ var
     i, j: integer;
     _x, _y: integer;
 begin
-    offsetX := (ScreenWidth - CellSizeX * MAPWIDTH) div 2;
-    offsetY := (ScreenHeight - CellSizeY * MAPHEIGHT) div 2;
+    offsetX := (ConsoleWidth - CellSizeX * MAPWIDTH) div 2;
+    offsetY := (ConsoleHeight - CellSizeY * MAPHEIGHT) div 2;
     if offsetY < 0 then
         offsetY := 0;
     for j := 1 to MAPHEIGHT do
@@ -327,8 +326,8 @@ var
     color: integer;
     _x, _y: integer;
 begin 
-    offsetX := (ScreenWidth + CellSizeX * MAPWIDTH) div 2;
-    offsetY := (ScreenHeight - CellSizeY * MAPHEIGHT) div 2;
+    offsetX := (ConsoleWidth + CellSizeX * MAPWIDTH) div 2;
+    offsetY := (ConsoleHeight - CellSizeY * MAPHEIGHT) div 2;
     if offsetY < 0 then
         offsetY := 0;
     
@@ -361,8 +360,8 @@ var
     offsetX: integer;
     offsetY: integer;
 begin 
-    offsetX := (ScreenWidth + CellSizeX * MAPWIDTH) div 2;
-    offsetY := (ScreenHeight - CellSizeY * MAPHEIGHT) div 2 + 8;
+    offsetX := (ConsoleWidth + CellSizeX * MAPWIDTH) div 2;
+    offsetY := (ConsoleHeight - CellSizeY * MAPHEIGHT) div 2 + 8;
     if offsetY < 0 then
         offsetY := 8;
 
@@ -409,14 +408,46 @@ begin
     end;
 end;
 
-function FindCollisonY(var game: TetrisGame) : integer;
-begin
-
-end;
-
-
 procedure PrintShade(var game: TetrisGame);
+var
+    _x, _y: integer;
+    offsetX, offsetY: integer;
+    i, j: integer;
+    _type: ShapeType;
+    _subtype: ShapeSubType;
+    color: integer;
+    _shape: TetrisShape;
 begin
+    _shape := game.currentShape;
+    FillShapeWith(game, FREE);
+    while not HasCollision(game, _shape) do begin
+        MoveShapeDown(_shape);
+    end;
+    FillShapeWith(game, ACTIVE);
+    MoveShapeUp(_shape);
+
+
+    offsetX := (ConsoleWidth - CellSizeX * MAPWIDTH) div 2;
+    offsetY := (ConsoleHeight - CellSizeY * MAPHEIGHT) div 2;
+    if offsetY < 0 then
+        offsetY := 0;
+
+    DrawInt64(game.context, offsetX, 10, 10);
+    DrawInt64(game.context, offsetY, 10, 11);
+
+    _type := _shape.shapeType;
+    _subtype := _shape.subtype;
+
+    color := GetShapeColor(_shape);
+
+    for j := 1 to 4 do begin
+        for i := 1 to 4 do begin
+            _x := offsetX + (i + _shape.posX) * CellSizeX;
+            _y := offsetY + (j + _shape.posY) * CellSizeY;
+            if Shapes[ord(_type) + 1][ord(_subtype) + 1][j][i] <> 0 then
+                DrawShadedCell(game.context, color, _x, _y);
+        end
+    end
 end;
 
 procedure Render(var game: TetrisGame);
@@ -429,6 +460,15 @@ begin
     TextBackground(WHITE);
     PrintScore(game);
     TextColor(WHITE);
+
+    PrintShade(game);
+    TextBackground(WHITE);
+    TextColor(WHITE);
+
+{$IFDEF DEBUG}
+    GotoXY(10, 10);
+    write('Render', random(10));
+{$ENDIF}
 
     if game.lose then 
         LoseHandle(game);
