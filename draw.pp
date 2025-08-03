@@ -19,6 +19,7 @@ type
 
 procedure InitTerminal(var context: DrawContext);
 procedure DrawCell(context: DrawContext; cell: integer; x, y : integer);
+procedure DrawShadedCell(context: DrawContext; cell: integer; x, y : integer);
 procedure DrawText(context: DrawContext; txt: string; x, y: integer);
 procedure DrawInt64(context: DrawContext; value: int64; x, y: integer);
 procedure SetTextColor(var context: DrawContext; color: integer);
@@ -71,6 +72,22 @@ begin
     write('   ');
     GotoXY(_x - CellSizeX + 1, _y - 1);
     write('   ');
+    GotoXY(1, 1);
+end;
+
+procedure DrawShadedCell(context: DrawContext; cell: integer; x, y : integer);
+var
+    _x, _y: integer;
+begin
+    _x := x;
+    _y := y;
+
+    TextBackground(White);
+    TextColor(BLACK);
+    GotoXY(_x - CellSizeX + 1, _y);
+    write('░░░');
+    GotoXY(_x - CellSizeX + 1, _y - 1);
+    write('░░░');
     GotoXY(1, 1);
 end;
 

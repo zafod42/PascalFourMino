@@ -230,7 +230,7 @@ end;
 procedure NewShape(var shape: TetrisShape; var bag: SevenBag);
 const
                                                   {(J,  I,  O, L, Z, T, S); }
-    posYStart: array [1..SHAPESCOUNT] of integer = (0, -2, -2, 0, 0, 0, 0);
+    posYStart: array [1..SHAPESCOUNT] of integer = (0, -1, -1, 0, 0, 0, 0);
 var
     _type: ShapeType;
 begin

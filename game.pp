@@ -36,24 +36,19 @@ procedure Render(var game: TetrisGame);
 procedure TetrisClean(var game: TetrisGame);
 
 implementation
-uses userinput, crt;
+uses userinput, crt, keys;
 
 function IsGameRunning(game: TetrisGame) : boolean;
 begin
     IsGameRunning := game.isRunning;
 end;
-
-procedure LoseHandle(var game: TetrisGame);
-begin
-
-end;
-
 procedure TetrisInit(var game: TetrisGame);
 var
     j, i: integer;
 begin
     { Game State is running }
     game.isRunning := True;
+    game.lose := False;
     { Init map }
     for j := 1 to MAPHEIGHT do begin
         for i:=1 to MAPWIDTH do begin
@@ -176,7 +171,7 @@ begin
     game.currentShape := game.nextShape;
     NewShape(game.nextShape, game.rng);
     if HasCollision(game) then
-        game.isRunning := false;
+        game.lose := true;
 
     for j := 1 to MAPHEIGHT do begin
         fullLines[j] := true;
@@ -199,11 +194,6 @@ begin
 end;
 
 procedure UpdateShape(var game: TetrisGame); 
-const
-    LEFT = -75;
-    RIGHT = -77;
-    UP = -72;
-    DOWN = -80;
 var 
     _key: integer;
 begin
@@ -247,6 +237,13 @@ begin
                 HandleBotCollision(game);
             end;
         end;
+        SPACE : begin { hard drop }
+            while not HasCollision(game) do 
+                MoveShapeDown(game.currentShape);
+            MoveShapeUp(game.currentShape);
+            FillShapeWith(game, CEMENT);
+            HandleBotCollision(game);
+        end;
     end;
     if game.gameTick mod 30 = 15 then
         MoveShapeDown(game.currentShape);
@@ -259,6 +256,40 @@ begin
         FillShapeWith(game, ACTIVE);
     end
 end;
+
+procedure LoseHandle(var game: TetrisGame);
+const
+    MESSAGE = 'Game Over';
+    SCORE_MSG = 'Score is ';
+    HELP_MSG = 'R to restart, ESC to exit';
+var
+    offsetX: integer;
+    offsetY: integer;
+    _x, _y: integer;
+begin
+    
+    TextBackground(WHITE);
+    SetTextColor(game.context, BLACK);
+
+    offsetY := game.context.centerY;
+    offsetX := game.context.centerX - (length(MESSAGE) div 2);
+    
+    DrawText(game.context, MESSAGE, offsetX, offsetY);
+
+    offsetY := offsetY + 1;
+    offsetX := game.context.centerX - (length(SCORE_MSG) div 2);
+
+    DrawText(game.context, SCORE_MSG, offsetX, offsetY);
+
+    offsetX := offsetX + length(SCORE_MSG) + 1;
+
+    DrawInt64(game.context, game.score, offsetX, offsetY);
+
+    offsetY := offsetY + 1;
+    offsetX := game.context.centerX - (length(HELP_MSG) div 2);
+    DrawText(game.context, HELP_MSG, offsetX, offsetY);
+end;
+
 
 procedure PrintMap(var game: TetrisGame);
 var
@@ -342,16 +373,50 @@ begin
 
 end;
 
+procedure TetrisRestart(var game: TetrisGame);
+var
+    j, i: integer;
+begin
+    for j := 1 to MAPHEIGHT do begin
+        for i:=1 to MAPWIDTH do begin
+            game.map[j][i] := 0;
+        end
+    end;
+
+    game.gravity := 1;
+    game.gameTick := 0;
+
+    BAGInit(game.rng);
+
+    NewShape(game.currentShape, game.rng);
+    NewShape(game.nextShape, game.rng);
+
+    game.lose := False;
+end;
+
 procedure Update(var game: TetrisGame);
 var
     key: integer;
 begin
     game.gameTick := game.gameTick + 1;
-    UpdateShape(game);
+    if not game.lose then
+        UpdateShape(game);
 
     key := game.input.key;
-    if key = ord(' ') then
-        game.isRunning := false;
+    case key of
+        R, SHIFT_R : TetrisRestart(game);
+        ESC : game.isRunning := false;
+    end;
+end;
+
+function FindCollisonY(var game: TetrisGame) : integer;
+begin
+
+end;
+
+
+procedure PrintShade(var game: TetrisGame);
+begin
 end;
 
 procedure Render(var game: TetrisGame);
@@ -364,6 +429,10 @@ begin
     TextBackground(WHITE);
     PrintScore(game);
     TextColor(WHITE);
+
+    if game.lose then 
+        LoseHandle(game);
+
     if game.isRunning = false then begin
         TextBackground(BLACK);
         TextColor(WHITE);

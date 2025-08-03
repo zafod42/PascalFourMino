@@ -7,6 +7,7 @@ var
     tetrisGame: game.TetrisGame;
     _start, _end: int64;
 begin
+    Randomize;
     if not isSceenEnough then begin
         writeln('Too small screen size.');
         writeln('Current size is: cols = ', ScreenHeight, '; rows = ', ScreenWidth);
