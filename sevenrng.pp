@@ -25,10 +25,12 @@ var
     i: integer;
     _type: ShapeType = Low(ShapeType);
 begin
-    for i := 1 to 7 do begin
-       bag.data[i] := _type;
-       _type := succ(_type); 
-    end;
+    i := 0;
+    repeat
+        _type := succ(_type); 
+       bag.data[i + 1] := _type;
+       i := i + 1;
+    until i = 6;
     bag.remain := 7;
 end;
 

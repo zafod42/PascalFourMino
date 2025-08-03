@@ -20,7 +20,7 @@ $(TARGET): $(MODULES)
 
 .PHONY: debug
 debug: $(MODULES)
-	$(PASCALC) -g $(SRC) -o$(TARGET)
+	$(PASCALC) -g -dDEBUG $(SRC) -o$(TARGET)
 
 .PHONY: clean 
 clean:

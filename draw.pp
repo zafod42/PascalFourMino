@@ -119,6 +119,12 @@ begin
 end;
 
 procedure DrawShadedCell(context: DrawContext; cell: integer; x, y : integer);
+const 
+{$IFDEF WINDOWS}
+    shadeSym = ':';
+{$ELSE}
+    shadeSym = '░';
+{$ENDIF}
 var
     _x, _y: integer;
 begin
@@ -128,9 +134,13 @@ begin
     TextBackground(cell);
     TextColor(BLACK);
     GotoXY(_x - CellSizeX + 1, _y);
-    write('░░░');
+    write(shadeSym);
+    write(shadeSym);
+    write(shadeSym);
     GotoXY(_x - CellSizeX + 1, _y - 1);
-    write('░░░');
+    write(shadeSym);
+    write(shadeSym);
+    write(shadeSym);
     GotoXY(1, 1);
 end;
 

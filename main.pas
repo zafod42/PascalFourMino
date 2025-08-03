@@ -10,8 +10,9 @@ const
 var
     tetrisGame: game.TetrisGame;
     _start, _end: int64;
+    delayMs: integer;
 begin
-    Randomize;
+    RandSeed := GetTickCount64;
     if not isSceenEnough then begin
         writeln('Too small screen size.');
         writeln('Current size is: cols = ', ConsoleWidth, '; rows = ', ConsoleHeight);
@@ -26,7 +27,13 @@ begin
         Update(tetrisGame);
         Render(tetrisGame);
         _end := GetTickCount64;
-        Sleep(FrameMS - (_end - _start));
+        delayMs := FrameMS - (_end - _start);
+        if delayMs > 0 then begin
+            Sleep(FrameMS - (_end - _start));
+        end
+        else begin
+            Sleep(0);
+        end;
     until not IsGameRunning(tetrisGame);
     TetrisClean(tetrisGame);
 end.

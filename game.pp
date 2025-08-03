@@ -134,15 +134,18 @@ begin
     y := _shape.posY;
     for j := 1 to 4 do begin
         for i := 1 to 4 do begin
+            if (y + j < 1) then
+                continue;
+
             if Shapes[ord(_type) + 1][ord(_rot) + 1][j][i] <> 0 then begin
-                if game.map[y + j][x + i] > 0 then begin
-                    Exit(True);
-                end;
                 if y + j > MAPHEIGHT then begin
                     Exit(True)
                 end;
                 if (x + i > MAPWIDTH) or (x + i < 1) then begin
                     Exit(True)
+                end;
+                if game.map[y + j][x + i] > 0 then begin
+                    Exit(True);
                 end;
             end
         end
@@ -328,8 +331,8 @@ var
 begin 
     offsetX := (ConsoleWidth + CellSizeX * MAPWIDTH) div 2;
     offsetY := (ConsoleHeight - CellSizeY * MAPHEIGHT) div 2;
-    if offsetY < 0 then
-        offsetY := 0;
+    if offsetY < 1 then
+        offsetY := 1;
     
     TextBackground(WHITE);
     SetTextColor(game.context, BLACK);
@@ -338,7 +341,7 @@ begin
     _type := game.nextShape.shapeType;
     color := GetShapeColor(game.nextShape);
 
-    offsetY := offsetY + 1;    
+    {offsetY := offsetY + 1;    }
     for j := 1 to 4 do begin
         for i := 1 to 4 do begin
             _x := offsetX + i * CellSizeX;
@@ -432,9 +435,6 @@ begin
     if offsetY < 0 then
         offsetY := 0;
 
-    DrawInt64(game.context, offsetX, 10, 10);
-    DrawInt64(game.context, offsetY, 10, 11);
-
     _type := _shape.shapeType;
     _subtype := _shape.subtype;
 
@@ -467,7 +467,9 @@ begin
 
 {$IFDEF DEBUG}
     GotoXY(10, 10);
+    TextColor(RED);
     write('Render', random(10));
+    TextColor(WHITE);
 {$ENDIF}
 
     if game.lose then 
