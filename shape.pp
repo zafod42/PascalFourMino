@@ -1,6 +1,6 @@
 unit shape;
 interface
-uses constants, sevenrng;
+uses constants, sevenrng, crt;
 
 type
     ShapeSubType = (degree0, degree90, degree180, degree270);
@@ -210,7 +210,22 @@ procedure MoveShapeUp(var shape: TetrisShape);
 procedure RotateShape(var shape: TetrisShape);
 procedure RotateShapeBack(var shape: TetrisShape);
 
+
+function GetShapeColor(var shape: TetrisShape) : integer;
+
 implementation
+
+
+function GetShapeColor(var shape: TetrisShape) : integer;
+const 
+                                                {(J,    I,     O,     L,     Z,     T,      S); }
+    colors: array [1..SHAPESCOUNT] of integer = (BLUE, CYAN, YELLOW, BROWN, RED, MAGENTA, GREEN);
+var
+    _type: ShapeType;
+begin
+    _type := shape.shapeType;
+    GetShapeColor := colors[ord(_type) + 1];
+end;
 
 procedure NewShape(var shape: TetrisShape; var bag: SevenBag);
 const

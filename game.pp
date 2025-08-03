@@ -1,6 +1,6 @@
 unit game;
 interface
-uses shape, constants, sevenrng;
+uses shape, constants, sevenrng, draw;
 
 const 
 
@@ -24,6 +24,8 @@ type
         gameTick: integer;
         gravity: integer;
         score: int64;
+        context: DrawContext;
+        lose: boolean;
     end;
 
 function IsGameRunning(game: TetrisGame) : boolean;
@@ -31,13 +33,19 @@ procedure TetrisInit(var game: TetrisGame);
 procedure ProcessInput(var game: TetrisGame);
 procedure Update(var game: TetrisGame);
 procedure Render(var game: TetrisGame);
+procedure TetrisClean(var game: TetrisGame);
 
 implementation
-uses draw, userinput, crt;
+uses userinput, crt;
 
 function IsGameRunning(game: TetrisGame) : boolean;
 begin
     IsGameRunning := game.isRunning;
+end;
+
+procedure LoseHandle(var game: TetrisGame);
+begin
+
 end;
 
 procedure TetrisInit(var game: TetrisGame);
@@ -62,7 +70,8 @@ begin
     NewShape(game.currentShape, game.rng);
     NewShape(game.nextShape, game.rng);
 
-    clrscr;
+    InitTerminal(game.context);
+
 end;
 
 procedure ClearInput(var game: TetrisGame);
@@ -82,15 +91,22 @@ begin
     end
 end;
 
-procedure FillShapeWith(var game: TetrisGame; value: integer);
+procedure FillShapeWith(var game: TetrisGame; mode: integer);
 var 
     _shape: shape.TetrisShape;
     x, y: integer;
     cols, rows: integer;
     id: integer;
     rot: integer;
+    value: integer;
 begin
     _shape := game.currentShape;
+    
+    case mode of 
+        FREE : value := 0;
+        CEMENT, ACTIVE : value := GetShapeColor(_shape); 
+    end;
+
     x := _shape.posX;
     y := _shape.posY;
     id := ord(_shape.shapeType) + 1;
@@ -124,7 +140,7 @@ begin
     for j := 1 to 4 do begin
         for i := 1 to 4 do begin
             if Shapes[ord(_type) + 1][ord(_rot) + 1][j][i] <> 0 then begin
-                if game.map[y + j][x + i] > 1 then begin
+                if game.map[y + j][x + i] > 0 then begin
                     Exit(True);
                 end;
                 if y + j > MAPHEIGHT then begin
@@ -188,6 +204,8 @@ const
     RIGHT = -77;
     UP = -72;
     DOWN = -80;
+var 
+    _key: integer;
 begin
     {
         1. See if we already hit floor or cement (collision)
@@ -244,25 +262,84 @@ end;
 
 procedure PrintMap(var game: TetrisGame);
 var
+    offsetX: integer;
+    offsetY: integer;
     i, j: integer;
+    _x, _y: integer;
 begin
+    offsetX := (ScreenWidth - CellSizeX * MAPWIDTH) div 2;
+    offsetY := (ScreenHeight - CellSizeY * MAPHEIGHT) div 2;
+    if offsetY < 0 then
+        offsetY := 0;
     for j := 1 to MAPHEIGHT do
     begin
         for i := 1 to MAPWIDTH do
         begin
-            if game.map[j][i] <> 0 then
-            begin
-                TextColor(RED);
-                write('▣ ');
+            _x := i * CellSizeX + offsetX;
+            _y := j * CellSizeY + offsetY;
+            if game.map[j][i] <> 0 then begin
+                DrawCell(game.context, game.map[j][i], _x, _y);
             end
-            else 
-            begin
-                TextColor(WHITE);
-                write('  ');
-            end
+            else begin
+                DrawCell(game.context, LIGHTGRAY, _x, _y);
+            end;
         end;
-        writeln;
     end
+end;
+
+procedure PrintNext(var game: TetrisGame);
+var
+    offsetX: integer;
+    offsetY: integer;
+    _type: ShapeType;
+    j, i: integer;
+    color: integer;
+    _x, _y: integer;
+begin 
+    offsetX := (ScreenWidth + CellSizeX * MAPWIDTH) div 2;
+    offsetY := (ScreenHeight - CellSizeY * MAPHEIGHT) div 2;
+    if offsetY < 0 then
+        offsetY := 0;
+    
+    TextBackground(WHITE);
+    SetTextColor(game.context, BLACK);
+    DrawText(game.context, 'NEXT', offsetX + 1, offsetY);
+    
+    _type := game.nextShape.shapeType;
+    color := GetShapeColor(game.nextShape);
+
+    offsetY := offsetY + 1;    
+    for j := 1 to 4 do begin
+        for i := 1 to 4 do begin
+            _x := offsetX + i * CellSizeX;
+            _y := offsetY + j * CellSizeY;
+            if Shapes[ord(_type) + 1][ord(degree0) + 1][j][i] <> 0 then
+            begin
+                DrawCell(game.context, color, _x, _y);
+            end
+            else
+            begin
+                DrawCell(game.context, WHITE, _x, _y);
+            end
+        end
+    end
+end;
+
+procedure PrintScore(var game: TetrisGame);
+var
+    offsetX: integer;
+    offsetY: integer;
+begin 
+    offsetX := (ScreenWidth + CellSizeX * MAPWIDTH) div 2;
+    offsetY := (ScreenHeight - CellSizeY * MAPHEIGHT) div 2 + 8;
+    if offsetY < 0 then
+        offsetY := 8;
+
+    TextBackground(WHITE);
+    SetTextColor(game.context, BLACK);
+    DrawText(game.context, 'Score: ', offsetX + 1 , offsetY);
+    DrawInt64(game.context, game.score, offsetX + 7, offsetY);
+
 end;
 
 procedure Update(var game: TetrisGame);
@@ -282,6 +359,11 @@ begin
     GotoXY(1, 1);
     TextBackground(WHITE);
     PrintMap(game);
+    TextBackground(WHITE);
+    PrintNext(game);
+    TextBackground(WHITE);
+    PrintScore(game);
+    TextColor(WHITE);
     if game.isRunning = false then begin
         TextBackground(BLACK);
         TextColor(WHITE);
@@ -290,5 +372,9 @@ begin
     TextBackground(BLACK);
 end;
 
+procedure TetrisClean(var game: TetrisGame);
+begin
+    RestoreTerminal(game.context);
+end;
 
 end.
